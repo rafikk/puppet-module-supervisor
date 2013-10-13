@@ -164,17 +164,16 @@ class supervisor(
     }
   }
 
-  if ! defined(Package[$supervisor::params::package]) {
-    package { $supervisor::params::package:
-      ensure => $package_ensure,
-    }
+  exec { 'install-supervisor':
+    command => 'URL=\'http://launchpadlibrarian.net/146209017/supervisor_3.0b2-1_all.deb\'; FILE=`mktemp`; wget "$URL" -qO $FILE && sudo dpkg -i $FILE; rm $FILE',
+    unless  => '/usr/bin/supervisord -v | grep -P ^3\.0$'
   }
 
   file { $conf_dir:
     ensure  => $dir_ensure,
     purge   => true,
     recurse => $recurse_config_dir,
-    require => Package[$supervisor::params::package],
+    require => Exec['install-supervisor'],
   }
 
   file { [
@@ -184,7 +183,7 @@ class supervisor(
     ensure  => $dir_ensure,
     purge   => true,
     backup  => false,
-    require => Package[$supervisor::params::package],
+    require => Exec['install-supervisor'],
   }
 
   file { $supervisor::params::conf_file:
@@ -198,7 +197,7 @@ class supervisor(
     file { '/etc/logrotate.d/supervisor':
       ensure  => $file_ensure,
       source  => 'puppet:///modules/supervisor/logrotate',
-      require => Package[$supervisor::params::package],
+      require => Exec['install-supervisor'],
     }
   }
 
